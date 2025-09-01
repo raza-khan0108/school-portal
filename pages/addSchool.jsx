@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import styles from "../styles/AddSchool.module.css";
+import styles from "../styles/addSchool.module.css";
 import Link from "next/link";
 
 export default function AddSchool() {
