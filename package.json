@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "start": "next start",
+    "start": "next start -p $PORT",
     "lint": "eslint"
+    
   },
   "dependencies": {
     "multer": "^2.0.2",
