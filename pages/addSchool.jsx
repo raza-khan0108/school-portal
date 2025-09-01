@@ -1,7 +1,6 @@
-// pages/addSchool.jsx
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import styles from "../styles/addSchool.module.css";
+import styles from "../styles/AddSchool.module.css";
 import Link from "next/link";
 
 export default function AddSchool() {
@@ -16,7 +15,9 @@ export default function AddSchool() {
     const formData = new FormData();
     for (let key in data) {
       if (key === "image") {
-        formData.append("image", data.image[0]);
+        if (data.image[0]) {
+          formData.append("image", data.image[0]);
+        }
       } else {
         formData.append(key, data[key]);
       }
@@ -33,7 +34,7 @@ export default function AddSchool() {
         setMessage("✅ School added successfully!");
         reset();
       } else {
-        setMessage("❌ Error: " + result.error);
+        setMessage("❌ Error: " + (result.error || "Unknown error"));
       }
     } catch (err) {
       setMessage("❌ Failed to connect to server");
@@ -61,6 +62,7 @@ export default function AddSchool() {
           )}
 
           <div className={styles.formGrid}>
+            {/* Keep all your existing form fields exactly as they were */}
             <div className={styles.formGroup}>
               <label htmlFor="name" className={styles.label}>
                 School Name *
@@ -132,7 +134,7 @@ export default function AddSchool() {
               </label>
               <input
                 id="city"
-                placeholder="Mumbai"
+                placeholder="New York"
                 className={`${styles.input} ${errors.city ? styles.errorInput : ""}`}
                 {...register("city", { required: "City is required" })}
               />
@@ -145,7 +147,7 @@ export default function AddSchool() {
               </label>
               <input
                 id="state"
-                placeholder="Maharashtra"
+                placeholder="New York"
                 className={`${styles.input} ${errors.state ? styles.errorInput : ""}`}
                 {...register("state", { required: "State is required" })}
               />
@@ -153,27 +155,30 @@ export default function AddSchool() {
             </div>
           </div>
 
-          <div className={styles.imageUploadSection}>
+          <div className={styles.formGroup}>
             <label htmlFor="image" className={styles.label}>
-              School Image *
+              School Image (Optional)
             </label>
-            <div className={styles.imageUploadContainer}>
+            <div className={styles.fileInputContainer}>
               <input
                 id="image"
                 type="file"
                 accept="image/*"
                 className={styles.fileInput}
                 {...register("image", {
-                  required: "School image is required",
                   validate: {
                     isImage: (files) => {
                       if (!files[0]) return true;
                       return files[0].type.startsWith('image/') || "Please select an image file";
+                    },
+                    fileSize: (files) => {
+                      if (!files[0]) return true;
+                      return files[0].size <= 5 * 1024 * 1024 || "File size must be less than 5MB";
                     }
                   }
                 })}
               />
-              <label htmlFor="image" className={styles.chooseImageButton}>
+              <label htmlFor="image" className={styles.fileInputLabel}>
                 Choose Image
               </label>
             </div>

@@ -1,79 +1,99 @@
-// pages/api/addSchool.js
-import multer from "multer";
-import { query } from "../../lib/db";
-import path from "path";
-import fs from "fs";
+import { query } from '../../lib/db';
+import { v2 as cloudinary } from 'cloudinary';
+import multer from 'multer';
+import stream from 'stream';
 
-// Configure multer for file uploads
-const upload = multer({
-  dest: "public/schoolImages/",
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed"));
-    }
-  }
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Disable Next.js body parser
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+});
+
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-// Helper function to parse multipart form data
-const parseForm = (req) => {
-  return new Promise((resolve, reject) => {
-    upload.single("image")(req, {}, (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-};
+const uploadMiddleware = upload.single('image');
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Parse the form data
-    await parseForm(req);
+    // Parse multipart form data
+    await new Promise((resolve, reject) => {
+      uploadMiddleware(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
 
     const { name, address, city, state, contact, email_id } = req.body;
     
-    if (!name || !address || !city || !state || !contact || !email_id) {
-      return res.status(400).json({ success: false, error: "All fields are required" });
-    }
-
-    let imagePath = "";
+    let imageUrl = '';
+    
+    // Upload image to Cloudinary if provided
     if (req.file) {
-      // Generate a unique filename to avoid conflicts
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const ext = path.extname(req.file.originalname);
-      const filename = `school-${uniqueSuffix}${ext}`;
-      const newPath = path.join("public/schoolImages/", filename);
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'school-portal',
+          transformation: [
+            { width: 800, height: 600, crop: 'limit' },
+            { quality: 'auto' },
+          ],
+        },
+        async (error, result) => {
+          if (error) {
+            console.error('Cloudinary upload error:', error);
+            return res.status(500).json({ success: false, error: 'Image upload failed' });
+          }
+          
+          imageUrl = result.secure_url;
+
+          try {
+            // Insert school data into database
+            const result = await query(
+              'INSERT INTO schools (name, address, city, state, contact, email_id, image) VALUES (?, ?, ?, ?, ?, ?, ?)',
+              [name, address, city, state, contact, email_id, imageUrl]
+            );
+
+            res.status(200).json({ success: true, id: result.insertId, imageUrl });
+          } catch (dbError) {
+            console.error('Database error:', dbError);
+            res.status(500).json({ success: false, error: 'Database error' });
+          }
+        }
+      );
+
+      // Create buffer stream and pipe to Cloudinary
+      const bufferStream = new stream.PassThrough();
+      bufferStream.end(req.file.buffer);
+      bufferStream.pipe(uploadStream);
       
-      // Move the file to the final location
-      fs.renameSync(req.file.path, newPath);
-      imagePath = `/schoolImages/${filename}`;
+    } else {
+      // No image provided, insert without image
+      const result = await query(
+        'INSERT INTO schools (name, address, city, state, contact, email_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [name, address, city, state, contact, email_id]
+      );
+
+      res.status(200).json({ success: true, id: result.insertId });
     }
 
-    // Insert into database
-    const result = await query(
-      "INSERT INTO schools (name, address, city, state, contact, email_id, image) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [name, address, city, state, contact, email_id, imagePath]
-    );
-
-    res.status(200).json({ success: true, id: result.insertId });
-  } catch (err) {
-    console.error("Error in addSchool API:", err);
-    res.status(500).json({ success: false, error: err.message || "Database error" });
+  } catch (error) {
+    console.error('Error in addSchool API:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 }
