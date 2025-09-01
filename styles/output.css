@@ -1,0 +1,22 @@
+/* If not using PostCSS or Tailwind CLI, import the Tailwind CSS files directly */
+
+@import "tailwindcss/base.css";
+
+@import "tailwindcss/components.css";
+
+@import "tailwindcss/utilities.css";
+
+body {
+  background-color: #f9fafb;
+  /* Tailwind bg-gray-50 */
+  color: #111827;
+  /* Tailwind text-gray-900 */
+  a {
+    color: #2563eb;
+    /* Tailwind text-blue-600 */
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+}

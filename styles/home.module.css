@@ -1,0 +1,108 @@
+/* Hero Section */
+.hero {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6); /* deep blue to lighter blue */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: white;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.overlay {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.content {
+  max-width: 900px;
+  text-align: center;
+}
+
+/* Text Styles */
+.heading {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.subheading {
+  font-size: 1.2rem;
+  margin-bottom: 2.5rem;
+  color: #e0e7ff;
+}
+
+/* Card Grid */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.card {
+  background: white;
+  color: #1e293b;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  text-align: left;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.8rem;
+  color: #1e3a8a;
+}
+
+.card p {
+  margin-bottom: 1.2rem;
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+/* Buttons */
+.buttonPrimary,
+.buttonSecondary {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.buttonPrimary {
+  background: #2563eb;
+  color: white;
+}
+
+.buttonPrimary:hover {
+  background: #1e40af;
+}
+
+.buttonSecondary {
+  background: #f3f4f6;
+  color: #1e3a8a;
+}
+
+.buttonSecondary:hover {
+  background: #e2e8f0;
+}
+
+/* Footer */
+.footer {
+  background: rgba(0, 0, 0, 0.2);
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: #f1f5f9;
+}
