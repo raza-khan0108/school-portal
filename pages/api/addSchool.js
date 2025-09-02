@@ -1,3 +1,4 @@
+// pages/api/addSchool.js
 import { query } from '../../lib/db';
 import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
@@ -41,56 +42,45 @@ export default async function handler(req, res) {
     });
 
     const { name, address, city, state, contact, email_id } = req.body;
-    
+
     let imageUrl = '';
-    
-    // Upload image to Cloudinary if provided
+
+    // If file uploaded → upload to Cloudinary
     if (req.file) {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'school-portal',
-          transformation: [
-            { width: 800, height: 600, crop: 'limit' },
-            { quality: 'auto' },
-          ],
-        },
-        async (error, result) => {
-          if (error) {
-            console.error('Cloudinary upload error:', error);
-            return res.status(500).json({ success: false, error: 'Image upload failed' });
-          }
-          
-          imageUrl = result.secure_url;
-
-          try {
-            // Insert school data into database
-            const result = await query(
-              'INSERT INTO schools (name, address, city, state, contact, email_id, image) VALUES (?, ?, ?, ?, ?, ?, ?)',
-              [name, address, city, state, contact, email_id, imageUrl]
-            );
-
-            res.status(200).json({ success: true, id: result.insertId, imageUrl });
-          } catch (dbError) {
-            console.error('Database error:', dbError);
-            res.status(500).json({ success: false, error: 'Database error' });
-          }
-        }
-      );
-
-      // Create buffer stream and pipe to Cloudinary
       const bufferStream = new stream.PassThrough();
       bufferStream.end(req.file.buffer);
-      bufferStream.pipe(uploadStream);
-      
-    } else {
-      // No image provided, insert without image
-      const result = await query(
-        'INSERT INTO schools (name, address, city, state, contact, email_id) VALUES (?, ?, ?, ?, ?, ?)',
-        [name, address, city, state, contact, email_id]
-      );
 
-      res.status(200).json({ success: true, id: result.insertId });
+      const cloudinaryUpload = () =>
+        new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              folder: 'school-portal',
+              transformation: [
+                { width: 800, height: 600, crop: 'limit' },
+                { quality: 'auto' },
+              ],
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          bufferStream.pipe(uploadStream);
+        });
+
+      const result = await cloudinaryUpload();
+      imageUrl = result.secure_url;
     }
+
+    // Insert into Postgres (Neon)
+    const insertResult = await query(
+      `INSERT INTO schools (name, address, city, state, contact, email_id, image)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id`,
+      [name, address, city, state, contact, email_id, imageUrl || null]
+    );
+
+    res.status(200).json({ success: true, id: insertResult[0].id, imageUrl });
 
   } catch (error) {
     console.error('Error in addSchool API:', error);

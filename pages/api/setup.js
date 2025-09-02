@@ -8,27 +8,27 @@ export default async function handler(req, res) {
 
   try {
     console.log('Setting up database...');
-    
-    // Create schools table
+
+    // Create schools table (Postgres syntax)
     await query(`
       CREATE TABLE IF NOT EXISTS schools (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         address TEXT,
         city VARCHAR(100),
         state VARCHAR(100),
         contact VARCHAR(20),
         email_id VARCHAR(255),
-        image VARCHAR(255),
+        image VARCHAR(500),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
     console.log('Table created successfully');
-    
+
     // Check if table is empty
-    const existingSchools = await query('SELECT COUNT(*) as count FROM schools');
-    
+    const existingSchools = await query('SELECT COUNT(*)::int AS count FROM schools');
+
     if (existingSchools[0].count === 0) {
       // Insert sample data only if table is empty
       await query(`
@@ -41,17 +41,17 @@ export default async function handler(req, res) {
       console.log('Sample data inserted');
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       message: 'Database setup complete!',
       tableCreated: true,
       dataInserted: existingSchools[0].count === 0
     });
   } catch (error) {
     console.error('Setup error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 }
